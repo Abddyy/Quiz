@@ -1,11 +1,10 @@
 <?php
-$host = 'aws-0-eu-central-1.pooler.supabase.com';
-$db = 'postgres';
-$user = 'postgres.ragepwbaervictvcfkuj';
-$password = 'Taima2004@';
-$port = '6543';
+$host = 'localhost'; 
+$db = 'quiz'; 
+$user = 'root'; 
+$password = ''; 
 
-$dsn = "pgsql:host=$host;port=$port;dbname=$db";
+$dsn = "mysql:host=$host;dbname=$db;charset=utf8";
 
 try {
     $pdo = new PDO($dsn, $user, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
