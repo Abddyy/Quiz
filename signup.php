@@ -1,41 +1,54 @@
 <?php
 include 'db.php';
 
+$error = ''; // To hold any error messages
+$emailError = ''; // Specific error message for email
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     $fullname = $_POST['fullname'] ?? '';
-    $role = $_POST['role'] ?? ''; // Ensure role is captured from the form
+    $role = $_POST['role'] ?? '';
 
-    // Validate inputs
     if ($password !== $confirmPassword) {
-        die("Passwords do not match.");
-    }
+        $error = "Passwords do not match.";
+    } elseif (empty($role)) {
+        $error = "Please select a role.";
+    } else {
+        // Hash the password
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-    if (empty($role)) {
-        die("Please select a role.");
-    }
+        try {
+            // Check if the email already exists
+            $checkEmailQuery = "SELECT COUNT(*) FROM users WHERE email = :email";
+            $stmt = $pdo->prepare($checkEmailQuery);
+            $stmt->execute([':email' => $email]);
+            $emailExists = $stmt->fetchColumn();
 
-    // Hash the password
-    $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+            if ($emailExists > 0) {
+                $emailError = "This email is already registered. Please use a different email.";
+            } else {
+                // Proceed with inserting data
+                $query = "INSERT INTO users (username, email, password_hash, fullName, role) 
+                          VALUES (:username, :email, :password, :fullname, :role)";
+                $stmt = $pdo->prepare($query);
+                $stmt->execute([
+                    ':username' => $username,
+                    ':email' => $email,
+                    ':password' => $hashedPassword,
+                    ':fullname' => $fullname,
+                    ':role' => $role
+                ]);
 
-    try {
-        $query = "INSERT INTO users (username, email, password_hash, fullName, role) 
-                  VALUES (:username, :email, :password, :fullname, :role)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute([
-            ':username' => $username,
-            ':email' => $email,
-            ':password' => $hashedPassword,
-            ':fullname' => $fullname,
-            ':role' => $role
-        ]);
-
-        echo "Signup successful! You can now log in.";
-    } catch (PDOException $e) {
-        echo "Error: " . $e->getMessage();
+                // Redirect or show success message
+                header("Location: success.php");
+                exit;
+            }
+        } catch (PDOException $e) {
+            $error = "Error: " . $e->getMessage();
+        }
     }
 }
 ?>
